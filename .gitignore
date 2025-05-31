@@ -1,0 +1,11 @@
+# Godot 4+ specific ignores
+.godot/
+.mono/
+bin/
+obj/
+*.tmp
+*.user
+.vs/
+*.sln.old
+.vscode/
+/android/
