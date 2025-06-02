@@ -15,6 +15,10 @@ run/main_scene="uid://bqcvkyo2b07u8"
 config/features=PackedStringArray("4.4", "C#", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[autoload]
+
+GameManager="*res://scripts/core/GameManager.cs"
+
 [dotnet]
 
 project/assembly_name="Idle Absurditree"
