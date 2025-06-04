@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using IdleAbsurditree.Scripts.Core;
+using IdleAbsurditree.Scripts.Data;
 
 namespace IdleAbsurditree.Scripts.Dev
 {
@@ -219,9 +220,9 @@ namespace IdleAbsurditree.Scripts.Dev
                 return;
             }
 
-            var info = $"Available: {FormatNumber(GameManager.Instance.AvailableNutrients)}\n";
-            info += $"Lifetime: {FormatNumber(GameManager.Instance.LifetimeNutrients)}\n";
-            info += $"Per Second: {FormatNumber(GameManager.Instance.NutrientsPerSecond)}";
+            var info = $"Available: {FormatNumber(GameManager.Instance.GameData.AvailableNutrients)}\n";
+            info += $"Lifetime: {FormatNumber(GameManager.Instance.GameData.LifetimeNutrients)}\n";
+            info += $"Per Second: {FormatNumber(GameManager.Instance.GameData.NutrientsPerSecond)}";
 
             stateInfo.Text = info;
         }
@@ -234,6 +235,8 @@ namespace IdleAbsurditree.Scripts.Dev
             if (_isVisible)
             {
                 Logger.LogDevCommand("DevMenu opened");
+                //show current per second production
+                _productionRateInput.Text = GameManager.Instance.GameData.AutoProductionPerSecond.ToString("F0");
             }
         }
 
@@ -263,7 +266,7 @@ namespace IdleAbsurditree.Scripts.Dev
                 
                 case NutrientTarget.Lifetime:
                     // Add to lifetime only by manipulating it directly
-                    var newLifetime = gameManager.LifetimeNutrients + amount;
+                    var newLifetime = gameManager.GameData.LifetimeNutrients + amount;
                     gameManager.SetLifetimeNutrients(newLifetime);
                     Logger.LogDevCommand("AddNutrients", $"target: Lifetime, amount: {amount}");
                     break;
@@ -346,12 +349,14 @@ namespace IdleAbsurditree.Scripts.Dev
         {
             if (double.TryParse(_productionRateInput.Text, out double rate))
             {
-                // Since we're now tracking gains automatically, this will temporarily
-                // add the specified rate but it will normalize based on actual gains
-                Logger.LogDevCommand("SetProduction", $"rate: {rate} (Note: This is now calculated automatically)");
-
-                // For immediate testing, we can temporarily add some nutrients
-                GameManager.Instance?.AddNutrients(rate * 5, "dev_production_test"); // 5 seconds worth
+                // Set the BaseNutrientsPerSecond in GameData
+                GameManager.Instance.GameData.AutoProductionPerSecond = rate;
+                GameManager.Instance.UpdateProductionRate(); // Trigger update for game logic and UI
+                Logger.LogDevCommand("SetBaseProduction", $"rate: {rate}");
+            }
+            else
+            {
+                GD.PrintErr("Invalid production rate entered.");
             }
         }
 

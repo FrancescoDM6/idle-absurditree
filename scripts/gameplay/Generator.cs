@@ -33,7 +33,7 @@ namespace IdleAbsurditree.Scripts.Gameplay
             BaseProduction = baseProduction;
 
             CreateUI();
-            UpdateUI();
+            // UpdateUI();
         }
 
         private void CreateUI()
@@ -83,7 +83,7 @@ namespace IdleAbsurditree.Scripts.Gameplay
             {
                 Count++;
                 Logger.LogGeneratorPurchase(GeneratorName, Count, cost);
-                UpdateUI();
+                // UpdateUI();
 
                 // Notify the UI to recalculate total production
                 var mainUI = GetTree().GetFirstNodeInGroup("MainUI") as MainUI;
@@ -103,32 +103,32 @@ namespace IdleAbsurditree.Scripts.Gameplay
             }
         }
 
-        private void UpdateUI()
-        {
-            if (_countLabel != null)
-                _countLabel.Text = $"Owned: {Count}";
+        // private void UpdateUI()
+        // {
+        //     if (_countLabel != null)
+        //         _countLabel.Text = $"Owned: {Count}";
 
-            if (_productionLabel != null)
-                _productionLabel.Text = $"Production: {FormatNumber(CurrentProduction)}/sec";
+        //     if (_productionLabel != null)
+        //         _productionLabel.Text = $"Production: {FormatNumber(CurrentProduction)}/sec";
 
-            if (_costLabel != null)
-                _costLabel.Text = $"Cost: {FormatNumber(CurrentCost)}";
+        //     if (_costLabel != null)
+        //         _costLabel.Text = $"Cost: {FormatNumber(CurrentCost)}";
 
-            if (_buyButton != null)
-            {
-                var canAfford = GameManager.Instance?.AvailableNutrients >= CurrentCost;
-                _buyButton.Disabled = !canAfford;
-            }
-        }
+        //     if (_buyButton != null)
+        //     {
+        //         var canAfford = GameManager.Instance?.AvailableNutrients >= CurrentCost;
+        //         _buyButton.Disabled = !canAfford;
+        //     }
+        // }
 
         public override void _Process(double delta)
         {
             // Update UI every frame to reflect current affordability
-            if (_buyButton != null && GameManager.Instance != null)
-            {
-                var canAfford = GameManager.Instance.AvailableNutrients >= CurrentCost;
-                _buyButton.Disabled = !canAfford;
-            }
+            // if (_buyButton != null && GameManager.Instance != null)
+            // {
+            //     var canAfford = GameManager.Instance.AvailableNutrients >= CurrentCost;
+            //     _buyButton.Disabled = !canAfford;
+            // }
         }
 
         private string FormatNumber(double number)
@@ -155,7 +155,7 @@ namespace IdleAbsurditree.Scripts.Gameplay
         public void LoadSaveData(Godot.Collections.Dictionary data)
         {
             Count = data["count"].AsInt32();
-            UpdateUI();
+            // UpdateUI();
         }
     }
 }

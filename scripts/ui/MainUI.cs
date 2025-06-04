@@ -16,7 +16,7 @@ namespace IdleAbsurditree.Scripts.UI
         private VBoxContainer _generatorContainer;
 
         // Generators
-        private List<Generator> _generators = new List<Generator>();
+        private List<Generator> _generators = new();
 
         // Click values
         private double _baseClickValue = 1.0;
@@ -47,65 +47,89 @@ namespace IdleAbsurditree.Scripts.UI
             InitializeGenerators();
 
             // Initial UI update
-            UpdateUI();
+            //UpdateUI();
         }
 
         private void InitializeGenerators()
         {
-            // Create a basic generator for demonstration
-            var basicGenerator = new Generator();
-            basicGenerator.Initialize("Root Sprout", 10, 1);
-            _generatorContainer.AddChild(basicGenerator);
-            _generators.Add(basicGenerator);
+            // Clear any existing generators in the UI
+            foreach (Node child in _generatorContainer.GetChildren())
+            {
+                child.QueueFree();
+            }
+            _generators.Clear();
 
-            // Add a second generator for more interesting gameplay
-            var leafGenerator = new Generator();
-            leafGenerator.Initialize("Leaf Cluster", 100, 5);
-            _generatorContainer.AddChild(leafGenerator);
-            _generators.Add(leafGenerator);
+            if (GameManager.Instance != null)
+            {
+                // Create generators based on the count initialized in GameData
+                // The actual baseCost and baseProduction should probably come from a separate data definition
+                // For this example, we'll hardcode them matching GameManager.RecalculateTotalBaseProduction
+                var generatorDefs = new (string name, double baseCost, double baseProduction)[]
+                {
+                    ("Root Sprout", 10, 1.0), // Matches index 0 in GameManager.RecalculateTotalBaseProduction
+                    ("Leaf Cluster", 100, 5.0) // Matches index 1 in GameManager.RecalculateTotalBaseProduction
+                };
 
-            // Load saved generator data if available
-            LoadGeneratorData();
+                // Create generator UI elements
+                for (int i = 0; i < generatorDefs.Length; i++)
+                {
+                    var def = generatorDefs[i];
+                    var generator = new Generator();
+                    generator.Initialize(def.name, def.baseCost, def.baseProduction);
+                    _generatorContainer.AddChild(generator);
+                    _generators.Add(generator);
+                }
 
-            // Update initial production
-            UpdateGeneratorProduction();
+             
+                var counts = GameManager.Instance.GameData.GeneratorCounts;
+                for (int i = 0; i < _generators.Count; i++)
+                {
+                    int savedCount = (i < counts.Count) ? counts[i] : 0;
+                    _generators[i].LoadSaveData(
+                        new Godot.Collections.Dictionary { ["count"] = savedCount }
+                    );
+                }
+                
+            }
+
+            UpdateInitialGeneratorPrices(); // Ensure prices are correct after initialization
         }
 
-        private void LoadGeneratorData()
+        //not ui focused
+        // public void UpdateGeneratorProduction()
+        // {
+        //     double totalProduction = 0.0;
+        //     for (int i = 0; i < _generators.Count; i++)
+        //     {
+        //         var gen = _generators[i];
+        //         totalProduction += gen.CurrentProduction;
+
+        //         // Also sync the count back into GameData.GeneratorCounts
+        //         // so SaveGame() already has the correct array.
+        //         GameManager.Instance.SetGeneratorCount(i, gen.Count);
+        //     }
+
+        //     // Inform GameManager of the up-to-date auto production value
+        //     GameManager.Instance.GameData.AutoProductionPerSecond = totalProduction;
+        // }
+
+        // private void LoadGeneratorData()
+        // {
+        //     if (GameManager.Instance == null) return;
+
+        //     var generatorData = GameManager.Instance.GetPendingGeneratorData();
+        //     if (generatorData == null) return;
+
+        //     for (int i = 0; i < generatorData.Count && i < _generators.Count; i++)
+        //     {
+        //         var data = generatorData[i].AsGodotDictionary();
+        //         _generators[i].LoadSaveData(data);
+        //     }
+        // }
+
+        public void ResetGenerators()
         {
-            if (GameManager.Instance == null) return;
-
-            var generatorData = GameManager.Instance.GetPendingGeneratorData();
-            if (generatorData == null) return;
-
-            for (int i = 0; i < generatorData.Count && i < _generators.Count; i++)
-            {
-                var data = generatorData[i].AsGodotDictionary();
-                _generators[i].LoadSaveData(data);
-            }
-        }
-
-        public void UpdateGeneratorProduction()
-        {
-            double totalProduction = 0;
-            foreach (var generator in _generators)
-            {
-                totalProduction += generator.CurrentProduction;
-            }
-
-            // No longer need to update GameManager's nutrientsPerSecond
-            // The per-second display now tracks all gains automatically
-        }
-
-        // Method for GameManager to get generator production
-        public double GetGeneratorProduction()
-        {
-            double totalProduction = 0;
-            foreach (var generator in _generators)
-            {
-                totalProduction += generator.CurrentProduction;
-            }
-            return totalProduction;
+            InitializeGenerators();
         }
 
         private void OnClickButtonPressed()
@@ -117,19 +141,29 @@ namespace IdleAbsurditree.Scripts.UI
             CreateFloatingText($"+{FormatNumber(clickValue)}", _clickButton.GlobalPosition);
         }
 
-        private void OnNutrientsChanged(double available, double lifetime, double perSecond)
+        private void OnNutrientsChanged(double available, double lifetime, double perSecondDisplay)
         {
-            UpdateUI();
+            UpdateUI(available, lifetime, perSecondDisplay);
         }
 
-        private void UpdateUI()
+        private void UpdateUI(double available, double lifetime, double perSecondDisplay)
         {
-            if (GameManager.Instance == null) return;
-
-            _lifetimeNutrientsLabel.Text = $"Lifetime Nutrients: {FormatNumber(GameManager.Instance.LifetimeNutrients)}";
-            _availableNutrientsLabel.Text = $"Available Nutrients: {FormatNumber(GameManager.Instance.AvailableNutrients)}";
-            _nutrientsPerSecondLabel.Text = $"Nutrients per Second: {FormatNumber(GameManager.Instance.NutrientsPerSecond)}";
+            _lifetimeNutrientsLabel.Text = $"Lifetime Nutrients: {FormatNumber(lifetime)}";
+            _availableNutrientsLabel.Text = $"Available Nutrients: {FormatNumber(available)}";
+            _nutrientsPerSecondLabel.Text = $"Nutrients per Second: {FormatNumber(perSecondDisplay)}"; // Use the display rate
         }
+
+        private void UpdateInitialGeneratorPrices()
+        {
+            foreach (var generator in _generators)
+            {
+                generator.CallDeferred("UpdateUI"); // Call deferred to ensure it runs after UI is ready
+            }
+        }
+
+        //
+        //utils (probably replace with functionalitiers from utils folder later)
+        //
 
         private void CreateFloatingText(string text, Vector2 position)
         {
